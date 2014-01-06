@@ -3,6 +3,8 @@ module Main where
 
 import Graphics.Gloss.Interface.Pure.Game
 
+import Control.Monad (msum)
+
 type Extent = (Float,Float)
 
 data GUI a =
@@ -16,6 +18,19 @@ render (Pic pic) = pic
 render (Position (p1,p2) gui) = translate p1 (negate p2) (render gui)
 render (Elements elements) = pictures (map render elements)
 render _ = blank
+
+data MouseDown = MouseDown Point
+
+handle :: Event -> GUI a -> Maybe a
+handle (EventKey (MouseButton LeftButton) Down _ m) = handleMouseDown (MouseDown m)
+handle _ = const Nothing
+
+handleMouseDown :: MouseDown -> GUI a -> Maybe a
+handleMouseDown (MouseDown m) (Click extent a)
+    | inside m extent = Just a
+    | otherwise = Nothing
+handleMouseDown (MouseDown (m1,m2)) (Position (p1,p2) gui) = handleMouseDown (MouseDown (m1 - p1,m2 - p2)) gui
+handleMouseDown mousedown (Elements elements) = msum (reverse (map (handleMouseDown mousedown) elements))
 
 inside :: Point -> Extent -> Bool
 inside (c1,c2) (w,h) = and [
