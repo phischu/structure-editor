@@ -22,14 +22,17 @@ type Selection = UID
 type UID = Integer
 
 renderEditor :: Editor -> Picture
-renderEditor (Editor selection remou) = translate (-500) 250 (pictures [
-    render (guiNest 500 (nestRemou selection remou)),
-    translate 750 (-200) (pictures [
+renderEditor editor = render (guiEditor editor)
+
+guiEditor :: Editor -> GUI UID
+guiEditor (Editor selection remou) = Position (-500,-250) (Elements [
+    guiNest 500 (nestRemou selection remou),
+    Position (750,250) (Pic (pictures [
         rectangleWire 500 500,
-        renderRemou remou])])
+        renderRemou remou]))])
 
 handleEditor :: Event -> Editor -> Editor
-handleEditor event (Editor selection remou) = case handle event (Position ((-250),0) (guiNest 500 (nestRemou selection remou))) of
+handleEditor event editor@(Editor selection remou) = case handle event (guiEditor editor) of
     Nothing -> Editor selection remou
     Just uid -> Editor uid remou
 
@@ -42,7 +45,7 @@ render _ = blank
 data MouseDown = MouseDown Point
 
 handle :: Event -> GUI a -> Maybe a
-handle (EventKey (MouseButton LeftButton) Down _ m) = handleMouseDown (MouseDown m)
+handle (EventKey (MouseButton LeftButton) Down _ (m1,m2)) = handleMouseDown (MouseDown (m1,-m2))
 handle _ = const Nothing
 
 handleMouseDown :: MouseDown -> GUI a -> Maybe a
