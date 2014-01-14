@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving, DeriveFunctor #-}
 module Main where
 
 
@@ -13,6 +14,8 @@ data GUI a =
     Position Point (GUI a) |
     Elements [GUI a]
 
+deriving instance Functor GUI
+
 data Editor = Editor Selection (Remou UID)
 
 type Selection = UID
@@ -24,6 +27,11 @@ renderEditor (Editor selection remou) = translate (-500) 250 (pictures [
     translate 750 (-200) (pictures [
         rectangleWire 500 500,
         renderRemou remou])])
+
+handleEditor :: Event -> Editor -> Editor
+handleEditor event (Editor selection remou) = case handle event (Position ((-250),0) (guiNest 500 (nestRemou selection remou))) of
+    Nothing -> Editor selection remou
+    Just uid -> Editor uid remou
 
 render :: GUI a -> Picture
 render (Pic pic) = pic
@@ -43,6 +51,7 @@ handleMouseDown (MouseDown m) (Click extent a)
     | otherwise = Nothing
 handleMouseDown (MouseDown (m1,m2)) (Position (p1,p2) gui) = handleMouseDown (MouseDown (m1 - p1,m2 - p2)) gui
 handleMouseDown mousedown (Elements elements) = msum (reverse (map (handleMouseDown mousedown) elements))
+handleMouseDown _ _ = Nothing
 
 inside :: Point -> Extent -> Bool
 inside (c1,c2) (w,h) = and [
@@ -107,7 +116,7 @@ main = play
     40
     testeditor
     renderEditor
-    (const id)
+    handleEditor
     (const id)
 
 
