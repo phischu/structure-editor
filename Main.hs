@@ -13,6 +13,18 @@ data GUI a =
     Position Point (GUI a) |
     Elements [GUI a]
 
+data Editor = Editor Selection (Remou UID)
+
+type Selection = UID
+type UID = Integer
+
+renderEditor :: Editor -> Picture
+renderEditor (Editor selection remou) = translate (-500) 250 (pictures [
+    render (guiNest 500 (nestRemou remou)),
+    translate 750 (-200) (pictures [
+        rectangleWire 500 500,
+        renderRemou remou])])
+
 render :: GUI a -> Picture
 render (Pic pic) = pic
 render (Position (p1,p2) gui) = translate p1 (negate p2) (render gui)
@@ -81,7 +93,7 @@ height (Nest _ _ nests) = 25 + sum (map height nests)
 testgui :: GUI Integer
 testgui = guiNest 300 (nestRemou testast)
 
-testast :: Remou Integer
+testast :: Remou UID
 testast =
     RemouTranslate (Number 40 0) (Number 60 1) (RemouCircle (Number 20 4) 3) 2
 
@@ -90,8 +102,8 @@ main = play
     (InWindow "stuff" (1000,500) (100,100))
     white
     40
-    testgui
-    render
+    (Editor 2 testast)
+    renderEditor
     (const id)
     (const id)
 
