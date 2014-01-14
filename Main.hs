@@ -21,20 +21,44 @@ data Editor = Editor Selection (Remou UID)
 type Selection = UID
 type UID = Integer
 
+data EditorEvent =
+    SelectionEvent UID |
+    NumberEvent Integer
+
 renderEditor :: Editor -> Picture
 renderEditor editor = render (guiEditor editor)
 
-guiEditor :: Editor -> GUI UID
-guiEditor (Editor selection remou) = Position (-500,-250) (Elements [
-    guiNest 500 (nestRemou selection remou),
+guiEditor :: Editor -> GUI EditorEvent
+guiEditor (Editor selection remou) = Position (-500,-300) (Elements [
+    fmap SelectionEvent (guiNest 500 (nestRemou selection remou)),
     Position (750,250) (Pic (pictures [
         rectangleWire 500 500,
-        renderRemou remou]))])
+        renderRemou remou])),
+    Position (0,500) (controlEditor selection remou)])
 
 handleEditor :: Event -> Editor -> Editor
 handleEditor event editor@(Editor selection remou) = case handle event (guiEditor editor) of
     Nothing -> Editor selection remou
-    Just uid -> Editor uid remou
+    Just (SelectionEvent uid) -> Editor uid remou
+    Just (NumberEvent n) -> Editor selection (changeNumberRemou n selection remou)
+
+changeNumberRemou :: Integer -> Selection -> Remou UID -> Remou UID
+changeNumberRemou n selection (RemouCircle num uid) = RemouCircle (changeNumberNumber n selection num) uid
+changeNumberRemou n selection (RemouTranslate num1 num2 remou uid) = RemouTranslate
+    (changeNumberNumber n selection num1)
+    (changeNumberNumber n selection num2)
+    (changeNumberRemou n selection remou)
+    uid
+
+changeNumberNumber :: Integer -> Selection -> Number UID -> Number UID
+changeNumberNumber n selection (Number i uid)
+    | selection == uid = Number n uid
+    | otherwise = Number i uid
+
+controlEditor :: Selection -> Remou UID -> GUI EditorEvent
+controlEditor _ _ = Elements [Position (fromIntegral n * 5,0) (Elements [
+    Click (5,100) (NumberEvent (n-100)),
+    Pic (translate 2.5 (-50) (rectangleWire 5 100))]) | n <- [0..200]]
 
 render :: GUI a -> Picture
 render (Pic pic) = pic
@@ -114,7 +138,7 @@ testeditor = Editor 0 testast
 
 main :: IO ()
 main = play
-    (InWindow "stuff" (1000,500) (100,100))
+    (InWindow "stuff" (1000,600) (100,100))
     white
     40
     testeditor
